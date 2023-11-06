@@ -9,6 +9,9 @@ class ConnectFour:
         self.board = [['-' for _ in range(cols)] for _ in range(rows)]
         self.turn = 'X'  # Player X goes first
 
+    ##########################################################################
+    # CREATION OF BOARD AND GAME PLAY MECHANICS 
+    ##########################################################################
     def print_board(self):
         for row in self.board:
             print(' '.join(row))
@@ -43,7 +46,37 @@ class ConnectFour:
                 if self.board[row + 3][col] == self.turn and all(self.board[row + 3 - i][col + i] == self.turn for i in range(4)):
                     return True
         return False
+    
+    def play_game(self, bot_play=True):
+        while True:
+            self.print_board()
+            if self.turn == 'X':
+                if bot_play:
+                    col, minimax_score = self.minimax(5, -math.inf, math.inf, True)
+                    if col is None:
+                        print("No valid moves left!")
+                        break
+                else:
+                    col = int(input(f"Player {self.turn}, choose column (0-{self.cols - 1}): "))
+            else:
+                col = int(input(f"Player {self.turn}, choose column (0-{self.cols - 1}): "))
 
+            if self.drop_piece(col):
+                if self.check_winner():
+                    self.print_board()
+                    print(f"Player {self.turn} wins!")
+                    break
+                if self.is_full():
+                    self.print_board()
+                    print("It's a draw!")
+                    break
+                self.switch_turn()
+            else:
+                print("Invalid move, try again.")
+
+    ##########################################################################
+    # MINIMAX ALGO AND BOARD STATE EVAL
+    ##########################################################################
     def is_full(self):
         return all(self.board[0][col] != '-' for col in range(self.cols))
 
@@ -157,35 +190,6 @@ class ConnectFour:
                 return r
         raise Exception("Column is full")
             
-    def play_game(self, bot_play=True):
-        while True:
-            self.print_board()
-            if self.turn == 'X':
-                if bot_play:
-                    col, minimax_score = self.minimax(5, -math.inf, math.inf, True)
-                    if col is None:
-                        print("No valid moves left!")
-                        break
-                else:
-                    col = int(input(f"Player {self.turn}, choose column (0-{self.cols - 1}): "))
-            else:
-                col = int(input(f"Player {self.turn}, choose column (0-{self.cols - 1}): "))
-
-            if self.drop_piece(col):
-                if self.check_winner():
-                    self.print_board()
-                    print(f"Player {self.turn} wins!")
-                    break
-                if self.is_full():
-                    self.print_board()
-                    print("It's a draw!")
-                    break
-                self.switch_turn()
-            else:
-                print("Invalid move, try again.")
-
-
-
 
 
 if __name__ == '__main__':
