@@ -1,7 +1,6 @@
 import tkinter as tk
 from main import ConnectFour
 from tkinter import messagebox
-import numpy as np
 
 class ConnectFourGUI:
     def __init__(self, game):
@@ -39,32 +38,31 @@ class ConnectFourGUI:
             self.update_board()
 
     def create_board(self):
-        self.buttons = []
+        self.circles = []
         for r in range(self.game.rows):
-            row_buttons = []
+            row_circles = []
             for c in range(self.game.columns):
-                btn = tk.Button(self.window, text=' ', command=lambda col=c: self.on_click(col), height=2, width=4)
-                # Add buttons starting from the bottom row
-                gui_row = self.game.rows - 1 - r
-                btn.grid(row=gui_row, column=c)
-                row_buttons.append(btn)
-            self.buttons.append(row_buttons)
-        self.buttons.reverse()
+                canvas = tk.Canvas(self.window, width=50, height=50, bg='white')
+                canvas.grid(row=self.game.rows - 1 - r, column=c)
+                # Draw an empty circle (white)
+                canvas.create_oval(10, 10, 40, 40, fill='white', outline='black')
+                canvas.bind("<Button-1>", lambda event, col=c: self.on_click(col))
+                row_circles.append(canvas)
+            self.circles.append(row_circles)
+        self.circles.reverse()
 
     def update_board(self):
         for r in range(self.game.rows):
             for c in range(self.game.columns):
-                # Calculate the GUI row from the bottom up
                 gui_row = self.game.rows - 1 - r
-                # Get the backend board value
                 piece = self.game.board[r][c]
-                btn = self.buttons[gui_row][c]
+                canvas = self.circles[gui_row][c]
                 if piece == self.game.USER_PIECE:
-                    btn.config(text="P", bg="blue")
+                    canvas.itemconfig(1, fill='blue')  # Update circle color
                 elif piece == self.game.AI_PIECE:
-                    btn.config(text="AI", bg="red")
+                    canvas.itemconfig(1, fill='red')  # Update circle color
                 else:
-                    btn.config(text=" ", bg="white")
+                    canvas.itemconfig(1, fill='white')  # Reset circle color
 
     def display_message(self, message):
         messagebox.showinfo("Game Info", message)
