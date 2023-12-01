@@ -22,7 +22,10 @@ class ConnectFour:
         return board
 
     def drop_piece(self, board, row, col, piece):
-        board[row][col] = piece
+        if row is not None and 0 <= row < self.rows and 0 <= col < self.columns:
+            board[row][col] = piece
+        else:
+            raise ValueError(f"Attempted to drop piece in an invalid location: row {row}, col {col}")
 
     def is_valid_location(self, board, col):
         return board[self.rows - 1][col] == self.EMPTY
@@ -59,6 +62,13 @@ class ConnectFour:
                     board[r + 3 - 2][c + 2] == piece and board[r + 3 - 3][c + 3] == piece):
                     return True
 
+        return False
+    
+    def is_game_over(self):
+        if self.winning_move(self.board, self.USER_PIECE) or self.winning_move(self.board, self.AI_PIECE):
+            return True
+        if len(self.get_valid_locations(self.board)) == 0:
+            return True
         return False
     
 ################################################################################    
