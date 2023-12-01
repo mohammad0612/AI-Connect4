@@ -4,79 +4,110 @@ import pandas as pd
 from tensorflow.keras.utils import to_categorical
 from sklearn.model_selection import train_test_split
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Conv2D, Flatten, Dense, Dropout, BatchNormalization, Activation
-from tensorflow.keras.regularizers import l2
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.layers import Conv2D, Flatten, Dense, Dropout, MaxPooling2D, BatchNormalization, Activation
+from tensorflow.keras import optimizers, losses
 from tensorflow.keras.callbacks import EarlyStopping
 
 # Function to load and preprocess the data
-def load_data():
-    # Assuming the last column is the class label
-    data = pd.read_csv('data/connect-4.data', header=None)
-    
-    # Encode the board states
-    mapping = {'x': 1, 'o': -1, 'b': 0}
-    for col in data.columns[:-1]:  # Exclude the class column
-        data[col] = data[col].map(mapping)
+def load_data(test_size=0.3):
+    # Load dataset
+    filename = "data/c4_game_database.csv"
+    data = pd.read_csv(filename)
+
+    # Handle NaN values in 'winner' column
+    data = data.dropna(subset=['winner'])  # Option 1: Remove rows where 'winner' is NaN
+    # data['winner'] = data['winner'].fillna(-1)  # Option 2: Replace NaN with a default value (e.g., -1)
+
+    # Separate features and target
+    features = data.iloc[:, :-1].values  # All columns except the last one
+    targets = data.iloc[:, -1].values    # Last column is the winner
+
+    # Replace target values with 0, 1, 2
+    target_mapping = {-1: 0, 0: 1, 1: 2}
+    targets = np.vectorize(target_mapping.get)(targets)
+
+    # Reshape features into a 6x7 grid
+    features = features.reshape((-1, 6, 7, 1))
 
     # One-hot encode the target variable
-    target_mapping = {'win': 0, 'loss': 1, 'draw': 2}
-    data.iloc[:, -1] = data.iloc[:, -1].map(target_mapping)  # Use iloc to reference the last column
-    target = to_categorical(data.iloc[:, -1])
+    targets = to_categorical(targets, num_classes=3)
 
-    # Reshape the data into a 6x7 grid
-    features = data.iloc[:, :-1].values.reshape((-1, 6, 7, 1))  # Reshape data
+    return train_test_split(features, targets, test_size=test_size)
 
-    # Split the dataset
-    return train_test_split(features, target, test_size=0.2, random_state=42)
 
-# Define the CNN model
-def create_model():
+
+# Function to generate the CNN model
+def generate_CNN(lr=0.001):
     model = Sequential()
     
-    # First Convolutional Layer
-    model.add(Conv2D(64, (4, 4), input_shape=(6, 7, 1), padding='same', kernel_regularizer=l2(0.01)))
+    # First Convolutional Block
+    model.add(Conv2D(64, (4, 4), input_shape=(6, 7, 1), padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    model.add(Dropout(0.3))
-    
-    # Second Convolutional Layer
-    model.add(Conv2D(128, (4, 4), padding='same', kernel_regularizer=l2(0.01)))
+    model.add(Conv2D(64, (4, 4), padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    model.add(Dropout(0.3))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    # Third Convolutional Layer
-    model.add(Conv2D(256, (4, 4), padding='same', kernel_regularizer=l2(0.01)))
+    # Second Convolutional Block
+    model.add(Conv2D(128, (3, 3), padding='same'))
     model.add(BatchNormalization())
     model.add(Activation('relu'))
-    model.add(Dropout(0.4))
+    model.add(Conv2D(128, (3, 3), padding='same'))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
 
-    # Flattening and Final Dense Layers
+    # Third Convolutional Block
+    model.add(Conv2D(256, (3, 3), padding='same'))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+    model.add(Conv2D(256, (3, 3), padding='same'))
+    model.add(BatchNormalization())
+    model.add(Activation('relu'))
+
+    # Flattening and Fully Connected Layers
     model.add(Flatten())
-    model.add(Dense(256, kernel_regularizer=l2(0.01)))
-    model.add(BatchNormalization())
-    model.add(Activation('relu'))
+    model.add(Dense(512, activation='relu'))
     model.add(Dropout(0.5))
-    
+    model.add(Dense(512, activation='relu'))
+    model.add(Dropout(0.5))
+
     # Output Layer
-    model.add(Dense(3, activation='softmax'))  # 3 for win, loss, draw
+    model.add(Dense(3, activation='softmax'))  # 3 classes: win, loss, draw
 
     # Compile the model
-    model.compile(optimizer=Adam(learning_rate=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
+    adam_optimizer = optimizers.Adam(learning_rate=lr)
+    model.compile(optimizer=adam_optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
 
     return model
 
 # Load and preprocess the data
 X_train, X_test, y_train, y_test = load_data()
 
-# Create and train the model
-model = create_model()
+# Define your custom layers for the CNN
+# custom_conv_layers = [
+#     # Example: Conv2D(64, (3, 3), activation='relu', padding='same')
+#     Conv2D(64, (3, 3), activation='relu', padding='same'),
+#     BatchNormalization(),
+#     Conv2D(128, (3, 3), activation='relu', padding='same'),
+#     BatchNormalization()
+# ]
+
+# custom_dense_layers = [
+#     # Example: Dense(64, activation='relu')
+#     Dense(128, activation='relu'),
+#     Dropout(0.5)
+# ]
+
+# Create and train the model with the custom architecture
+model = generate_CNN()
+
 # EarlyStopping callback
 early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
 
 # Train the model
-history = model.fit(X_train, y_train, epochs=200,  # Increased epochs
+history = model.fit(X_train, y_train, epochs=15,
                     validation_data=(X_test, y_test),
                     callbacks=[early_stopping])
 
