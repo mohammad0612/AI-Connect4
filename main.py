@@ -1,7 +1,52 @@
 import numpy as np
+import gym
+from gym import spaces
 import random
 import sys
 import math
+
+class ConnectFourEnv(gym.Env):
+    metadata = {'render.modes': ['human']}
+
+    def __init__(self):
+        super(ConnectFourEnv, self).__init__()
+        self.action_space = spaces.Discrete(7)  # Assuming 7 columns
+        self.observation_space = spaces.Box(low=0, high=2, shape=(6, 7), dtype=np.int32)  # Assuming 6x7 board
+        self.game = ConnectFour()
+
+    def step(self, action):
+        # Check if the action is valid
+        if not self.game.is_valid_location(self.game.board, action):
+            return self.game.board, -10, True, {}  # Penalize and end game for invalid move
+
+        # Drop the piece and check for game over or win
+        row = self.game.get_next_open_row(self.game.board, action)
+        self.game.drop_piece(self.game.board, row, action, self.game.AI_PIECE)
+
+        if self.game.winning_move(self.game.board, self.game.AI_PIECE):
+            # Calculate reward based on the number of moves taken
+            # For example, a simple formula could be: 100 - number_of_moves
+            # Where number_of_moves is the count of pieces on the board
+            num_moves = np.count_nonzero(self.game.board)
+            reward = max(10, 100 - num_moves)
+            return self.game.board, reward, True, {}  # AI wins
+
+        elif len(self.game.get_valid_locations(self.game.board)) == 0:
+            return self.game.board, 0, True, {}  # Draw
+
+        return self.game.board, 0, False, {}
+
+    def reset(self):
+        self.game.board = self.game.create_board()
+        self.game.turn = 0  # Reset to player's turn
+        return self.game.board
+
+    def render(self, mode='human'):
+        self.game.print_board(self.game.board)
+
+    def close(self):
+        pass
+
 
 class ConnectFour:
     ## SET BOARD PARAMETERS HERE, CAN PLAY AROUND WITH THEM IN DEEP NEURAL NET POSSIBLY
@@ -246,6 +291,17 @@ class ConnectFour:
             print("-" * (self.columns * 4))  
             self.turn = 1 - self.turn
 
+# if __name__ == '__main__':
+#     connect = ConnectFour(rows=6, columns=7)
+#     connect.play_game()
+
 if __name__ == '__main__':
-    connect = ConnectFour(rows=6, columns=7)
-    connect.play_game()
+    env = ConnectFourEnv()
+    env.reset()
+    for _ in range(10):  # Example of playing 10 steps (actions are chosen randomly)
+        action = env.action_space.sample()
+        obs, reward, done, info = env.step(action)
+        env.render()
+        if done:
+            print("Game Over")
+            break
