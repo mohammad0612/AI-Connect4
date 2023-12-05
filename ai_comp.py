@@ -57,7 +57,7 @@ def play_game(cnn_ai, minimax_ai, game_instance):
 
 
 def main():
-    cnn_ai = CNNAI('connect_four_dqn.h5')  # Update this path
+    cnn_ai = CNNAI('connect4_model.h5')  # Update this path
     minimax_ai = ConnectFour()
     
     results = {"CNN": 0, "Minimax": 0, "Draw": 0}

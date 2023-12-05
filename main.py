@@ -10,36 +10,80 @@ class ConnectFourEnv(gym.Env):
 
     def __init__(self):
         super(ConnectFourEnv, self).__init__()
-        self.action_space = spaces.Discrete(7)  # Assuming 7 columns
-        self.observation_space = spaces.Box(low=0, high=2, shape=(6, 7), dtype=np.int32)  # Assuming 6x7 board
+        self.action_space = spaces.Discrete(7)  # 7 columns to choose from
+        self.observation_space = spaces.Box(low=0, high=2, shape=(6, 7), dtype=np.int32)  # 6x7 board
         self.game = ConnectFour()
+        self.num_moves = 0
+        self.last_move = None
+        self.current_player = self.game.USER  # Start with the USER
 
     def step(self, action):
         # Check if the action is valid
         if not self.game.is_valid_location(self.game.board, action):
-            return self.game.board, -10, True, {}  # Penalize and end game for invalid move
+            flattened_board = self.game.board.flatten()
+            return flattened_board, -100, True, {}  # Penalize and end game for invalid move
 
-        # Drop the piece and check for game over or win
+        # Drop the piece for the current player
         row = self.game.get_next_open_row(self.game.board, action)
-        self.game.drop_piece(self.game.board, row, action, self.game.AI_PIECE)
+        self.last_move = (row, action)  # Store the row and column of the last move
 
-        if self.game.winning_move(self.game.board, self.game.AI_PIECE):
-            # Calculate reward based on the number of moves taken
-            # For example, a simple formula could be: 100 - number_of_moves
-            # Where number_of_moves is the count of pieces on the board
-            num_moves = np.count_nonzero(self.game.board)
-            reward = max(10, 100 - num_moves)
-            return self.game.board, reward, True, {}  # AI wins
+        self.game.drop_piece(self.game.board, row, action, self.current_player + 1)
+        self.num_moves += 1
 
+        flattened_board = self.game.board.flatten()
+        reward = 0
+        done = False
+
+        # Check for win, loss, or draw
+        if self.game.winning_move(self.game.board, self.current_player + 1):
+            reward = 10 
+            done = True
+        elif self.game.winning_move(self.game.board, 1 - self.current_player + 1):
+            reward = -10
+            done = True
         elif len(self.game.get_valid_locations(self.game.board)) == 0:
-            return self.game.board, 0, True, {}  # Draw
+            reward = 0
+            done = True
+        else:
+            # Reward for blocking opponent's winning move
+            if self.blocked_opponent_win():
+                reward += 30
 
-        return self.game.board, 0, False, {}
+        # Switch players
+        self.current_player = 1 - self.current_player
+
+        return flattened_board, reward, done, {}
+    
+    def blocked_opponent_win(self):
+        # Assuming self.last_move is the last move made by the AI
+        # and self.game.board is the current state of the board
+        # You would need to store the last move and the state of the board before the last move was made
+        if self.last_move is None:
+            return False  # No last move to check
+        last_row, last_col = self.last_move
+        opponent_piece = self.game.USER_PIECE if self.current_player == self.game.AI else self.game.AI_PIECE
+
+        # Check if the opponent had a winning move at last_row, last_col
+        # Temporarily place the opponent's piece at the last move location
+        original_piece = self.game.board[last_row][last_col]
+        self.game.board[last_row][last_col] = opponent_piece
+
+        if self.game.winning_move(self.game.board, opponent_piece):
+            # Restore the original piece
+            self.game.board[last_row][last_col] = original_piece
+            return True
+
+        # Restore the original piece
+        self.game.board[last_row][last_col] = original_piece
+        return False
+
 
     def reset(self):
         self.game.board = self.game.create_board()
-        self.game.turn = 0  # Reset to player's turn
-        return self.game.board
+        self.current_player = self.game.USER  # or random.choice([self.game.USER, self.game.AI])
+        flattened_board = self.game.board.flatten()
+        self.num_moves = 0
+        return flattened_board
 
     def render(self, mode='human'):
         self.game.print_board(self.game.board)
