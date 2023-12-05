@@ -223,35 +223,43 @@ class ConnectFour:
         print()
 
     def ai_make_move(self):
-     
-        # Get Available column and corresponding row indices
-        self.col_indices = [i for i,v in enumerate(self.col_moves) if v != 0]
-        row_indices      = [i - 1 for i in self.col_moves if i != 0]
-        # Make array of potential board states, each with the players next possible moves
-        potential_states = np.array([self.grid.copy() for i in self.col_indices])
-        
-        # Update the potential_states with AI's piece
+        # Get available column and corresponding row indices
+        # Array to keep track of how many positions are left in each column
+        print(self.col_moves)
+        self.col_indices = [i for i, v in enumerate(self.col_moves) if v != 0]
+        row_indices = [i - 1 for i in self.col_moves if i != 0]
+
+        # Make a deep copy of the grid
+        potential_states = [np.flip(np.copy(self.board), 0) for _ in self.col_indices]
+
+        # Update the potential_states with AI's piece and update col_moves
         for i, col in enumerate(self.col_indices):
-            row = row_indices[i]  # Adjusted index for row
-            if row >= 0:  # Check if row index is within bounds
+            # Find the highest row with a zero in this column
+            row = next((r for r in reversed(range(self.rows)) if potential_states[i][r][col] == 0), -1)
+            if row != -1:
                 potential_states[i][row][col] = self.AI_PIECE
-            else:
-                print("Invalid row index:", row)
 
-        # Reshape potential states so that it fits into the Conv2D model
-        potential_states = np.array([s.reshape(6,7,1) for s in potential_states])
+        # for state in potential_states:
+        #     print('\n')
+        #     self.draw_board(state)
 
-        # Make predictions with Model object
-        self.predictions = self.model.predict(potential_states).flatten()
+        # # Reshape potential states so that they fit into the Conv2D model
+        # potential_states = np.array([s.reshape(6, 7, 1) for s in potential_states])
+        self.predictions = []
+        for state in potential_states:
+            print(self.model.predict(state.reshape(1, 6, 7, 1)).flatten())
+            self.predictions.append(self.model.predict(state.reshape(1, 6, 7, 1)).flatten()[0])
+        # Make predictions with the model object
+        # self.predictions = self.model.predict(potential_states).flatten()
         print(self.predictions)
 
+        # Select the move with the highest predicted likelihood of winning
+        best_move = np.argmax(self.predictions)
+        print(best_move)
 
-        # Select prediction closest to 1 (likelihood of winning?)
-        # and assign it to the choice attribute
-        best_move = np.where(self.predictions == self.predictions.max())[0][0]
         self.choice = self.col_indices[best_move]
 
-        return 0
+        return best_move
     def play_game(self):
         game_over = False
 
@@ -271,8 +279,10 @@ class ConnectFour:
                 col = self.ai_make_move()  # AI makes a move
 
             row = self.get_next_open_row(self.board, col)
+            print("this is row", row)
+            print("this is col", col)
+            self.col_moves[col] -= 1
             self.drop_piece(self.board, row, col, self.turn + 1)
-
             if self.winning_move(self.board, self.turn + 1):
                 self.print_board(self.board)
                 print(f"Player {self.turn + 1} wins!!")

@@ -35,7 +35,7 @@ def load_data(test_size=0.3):
     return train_test_split(features, targets, test_size=test_size)
 
 # Function to generate the CNN model
-def generate_CNN(lr=0.0001):
+def generate_CNN(lr=0.001):
     model = Sequential()
     
     # First Convolutional Block
@@ -73,6 +73,9 @@ def generate_CNN(lr=0.0001):
     model.add(Dense(512, activation='relu'))
     model.add(Dropout(0.5))
 
+    # Add dropout layer 
+    model.add(Dropout(0.5))
+
     # Output Layer
     model.add(Dense(3, activation='softmax'))  # 3 classes: win, loss, draw
 
@@ -86,7 +89,7 @@ def generate_CNN(lr=0.0001):
 X_train, X_test, y_train, y_test = load_data()
 
 # Create and train the model with the custom architecture
-model = generate_CNN(lr=0.0001)  # Adjusted learning rate
+model = generate_CNN(lr=0.001)  # Adjusted learning rate
 
 # EarlyStopping callback
 early_stopping = EarlyStopping(monitor='val_accuracy', patience=5, restore_best_weights=True)
