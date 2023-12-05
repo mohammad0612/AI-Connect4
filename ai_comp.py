@@ -1,37 +1,15 @@
-import numpy as np
+# Assuming LearningAI is in a separate file, let's import it.
+from learning_ai import LearningAI
 from main import ConnectFour
-from tensorflow.keras.models import load_model
+import numpy as np
+import math
 
-class CNNAI:
-    def __init__(self, model_path):
-        self.model = load_model(model_path)
-        
-    def predict_move(self, board_state):
-        board_state = np.array(board_state).reshape((1, 6, 7, 1))
-        probabilities = self.model.predict(board_state)[0]
-        return np.argmax(probabilities)
-
-def play_game(cnn_ai, minimax_ai, game_instance):
+def play_game(learning_ai, minimax_ai, game_instance):
     while not game_instance.is_game_over():
         if game_instance.turn == game_instance.USER:
-            # Choose a valid move from CNN AI
-            valid_move = False
-            attempted_columns = set()
-            while not valid_move:
-                col = cnn_ai.predict_move(game_instance.board)
-                if col in attempted_columns:
-                    print(f"CNN AI is attempting to play in a full column: {col}")
-                    # Select a random column that hasn't been attempted yet
-                    col = np.random.choice([c for c in range(game_instance.columns) if c not in attempted_columns])
-                
-                if game_instance.is_valid_location(game_instance.board, col):
-                    valid_move = True
-                else:
-                    attempted_columns.add(col)
-
-                if len(attempted_columns) == game_instance.columns:
-                    print("All columns are full. It's a draw.")
-                    return "Draw"
+            # Choose a valid move from Learning AI
+            learning_ai.move(game_instance)  # Predicts the next move
+            col = learning_ai.choice
         else:
             # Choose a valid move from Minimax AI
             valid_move = False
@@ -47,31 +25,28 @@ def play_game(cnn_ai, minimax_ai, game_instance):
         game_instance.drop_piece(game_instance.board, row, col, game_instance.turn + 1)
 
         if game_instance.winning_move(game_instance.board, game_instance.turn + 1):
-            return 'CNN' if game_instance.turn == game_instance.USER else 'Minimax'
+            return 'LearningAI' if game_instance.turn == game_instance.USER else 'Minimax'
 
         game_instance.turn = 1 - game_instance.turn  # Switch turns
 
     return "Draw"
 
-
-
-
 def main():
-    cnn_ai = CNNAI('connect4_model.h5')  # Update this path
+    learning_ai = LearningAI('connect4_next_move_model.h5', p=1, name='Paul')  # Update the model path
     minimax_ai = ConnectFour()
     
-    results = {"CNN": 0, "Minimax": 0, "Draw": 0}
+    results = {"LearningAI": 0, "Minimax": 0, "Draw": 0}
     num_games = 10
 
     for i in range(num_games):
         print(i)
         game_instance = ConnectFour()
-        winner = play_game(cnn_ai, minimax_ai, game_instance)
+        winner = play_game(learning_ai, minimax_ai, game_instance)
         results[winner] += 1
 
     # Print the results
     print(f"After {num_games} games, we have:")
-    print(f"CNN AI wins: {results['CNN']} ({(results['CNN'] / num_games) * 100}%)")
+    print(f"LearningAI wins: {results['LearningAI']} ({(results['LearningAI'] / num_games) * 100}%)")
     print(f"Minimax AI wins: {results['Minimax']} ({(results['Minimax'] / num_games) * 100}%)")
     print(f"Draws: {results['Draw']} ({(results['Draw'] / num_games) * 100}%)")
 

@@ -16,6 +16,10 @@ class ConnectFour:
         self.WIN_RANGE = 4
         self.board = self.create_board()
         self.turn = random.choice([self.USER, self.AI])
+        self.grid = np.zeros((self.rows, self.columns))
+
+        # Array to keep track of how many positions are left in each column
+        self.col_moves = np.zeros(self.columns, dtype=np.int64) + self.rows
 
     def create_board(self):
         board = np.zeros((self.rows, self.columns))
