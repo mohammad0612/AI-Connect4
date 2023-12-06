@@ -36,18 +36,14 @@ class ConnectFourEnv(gym.Env):
 
         # Check for win, loss, or draw
         if self.game.winning_move(self.game.board, self.current_player + 1):
-            reward = 10 
+            reward = 1 
             done = True
         elif self.game.winning_move(self.game.board, 1 - self.current_player + 1):
-            reward = -10
+            reward = -1
             done = True
         elif len(self.game.get_valid_locations(self.game.board)) == 0:
-            reward = 0
+            reward = 0.5
             done = True
-        else:
-            # Reward for blocking opponent's winning move
-            if self.blocked_opponent_win():
-                reward += 30
 
         # Switch players
         self.current_player = 1 - self.current_player
@@ -105,6 +101,38 @@ class ConnectFour:
         self.WIN_RANGE = 4
         self.board = self.create_board()
         self.turn = random.choice([self.USER, self.AI])
+    
+    def winning_move(self, board, piece):
+        # Check for horizontal win
+        for c in range(self.columns - 3):
+            for r in range(self.rows):
+                if board[r][c] == piece and board[r][c + 1] == piece and \
+                board[r][c + 2] == piece and board[r][c + 3] == piece:
+                    return True
+
+        # Check for vertical win
+        for c in range(self.columns):
+            for r in range(self.rows - 3):
+                if board[r][c] == piece and board[r + 1][c] == piece and \
+                board[r + 2][c] == piece and board[r + 3][c] == piece:
+                    return True
+
+        # Check positively sloped diagonals
+        for c in range(self.columns - 3):
+            for r in range(self.rows - 3):
+                if board[r][c] == piece and board[r + 1][c + 1] == piece and \
+                board[r + 2][c + 2] == piece and board[r + 3][c + 3] == piece:
+                    return True
+
+        # Check negatively sloped diagonals
+        for c in range(self.columns - 3):
+            for r in range(3, self.rows):
+                if board[r][c] == piece and board[r - 1][c + 1] == piece and \
+                board[r - 2][c + 2] == piece and board[r - 3][c + 3] == piece:
+                    return True
+
+        return False
+
 
     def create_board(self):
         board = np.zeros((self.rows, self.columns))
