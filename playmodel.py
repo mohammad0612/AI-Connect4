@@ -17,7 +17,7 @@ class ConnectFour:
         self.WIN_RANGE = 4
         self.board = self.create_board()
         self.turn = random.choice([self.USER, self.AI])
-        self.model = load_model('connect4_model.h5')
+        self.model = load_model('connect4_testmodel.h5')
         
         self.grid = np.zeros((self.rows, self.columns))
 
