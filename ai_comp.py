@@ -1,5 +1,4 @@
 # Assuming LearningAI is in a separate file, let's import it.
-from learning_ai import LearningAI
 from main import ConnectFour
 import numpy as np
 import math

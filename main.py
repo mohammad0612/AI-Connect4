@@ -21,24 +21,29 @@ class ConnectFour:
         # Array to keep track of how many positions are left in each column
         self.col_moves = np.zeros(self.columns, dtype=np.int64) + self.rows
 
+    # creates a new connect four board
     def create_board(self):
         board = np.zeros((self.rows, self.columns))
         return board
 
+    # drops a connect four piece into the board
     def drop_piece(self, board, row, col, piece):
         if row is not None and 0 <= row < self.rows and 0 <= col < self.columns:
             board[row][col] = piece
         else:
             raise ValueError(f"Attempted to drop piece in an invalid location: row {row}, col {col}")
 
+    # determines if a location is valid connect four spot to drop a piece
     def is_valid_location(self, board, col):
         return board[self.rows - 1][col] == self.EMPTY
 
+    # gets the next open row in a column
     def get_next_open_row(self, board, col):
         for r in range(self.rows):
             if board[r][col] == self.EMPTY:
                 return r
 
+    # prints the board state to the console
     def print_board(self, board):
         print(np.flip(board, 0))
 
@@ -68,6 +73,7 @@ class ConnectFour:
 
         return False
     
+    # determines if the game is over
     def is_game_over(self):
         if self.winning_move(self.board, self.USER_PIECE) or self.winning_move(self.board, self.AI_PIECE):
             return True
@@ -79,6 +85,7 @@ class ConnectFour:
 ##################### MINIMAX AND ALPHA BETA PRUNING ALGORITHMS ################
 ################################################################################
 
+    # Evaluates the score of a window for a given player's piece.
     def evaluate_window(self, window, piece):
         score = 0
         opp_piece = self.USER_PIECE
@@ -100,6 +107,7 @@ class ConnectFour:
 
         return score
 
+    # Scores the entire board position based on potential winning scenarios for a player's piece.
     def score_position(self, board, piece):
         score = 0
 
@@ -130,12 +138,14 @@ class ConnectFour:
                 score += self.evaluate_window(window, piece)
 
         return score
-
+    
+    # Determines if the current board position is a terminal node.
     def is_terminal_node(self, board):
         return (self.winning_move(board, self.USER_PIECE) or
                 self.winning_move(board, self.AI_PIECE) or
                 len(self.get_valid_locations(board)) == 0)
-
+    
+    # Minimax algorithm with alpha-beta pruning
     def minimax(self, board, depth, alpha, beta, maximizingPlayer):
         valid_locations = self.get_valid_locations(board)
         is_terminal = self.is_terminal_node(board)
@@ -180,14 +190,16 @@ class ConnectFour:
                 if alpha >= beta:
                     break
             return column, value
-
+        
+    # Returns a list of valid locations to drop a piece
     def get_valid_locations(self, board):
         valid_locations = []
         for col in range(self.columns):
             if self.is_valid_location(board, col):
                 valid_locations.append(col)
         return valid_locations
-
+    
+    # helper function for minimax algorithm to help debug
     def pick_best_move(self, board, piece):
         valid_locations = self.get_valid_locations(board)
         best_score = -10000
