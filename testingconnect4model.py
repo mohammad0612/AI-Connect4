@@ -358,5 +358,5 @@ class ConnectFour:
 
 if __name__ == '__main__':
     connect = ConnectFour(rows=6, columns=7)
-    # connect.plot_win_rate_against_random()
+    connect.plot_win_rate_against_random()
     connect.plot_win_rate_against_minimax()
