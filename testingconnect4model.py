@@ -224,7 +224,7 @@ class ConnectFour:
       model = load_model('connect4_new_model.h5')
 
       # Flatten the board and reshape it to match the model's input shape
-      board_flattened = np.flip(self.board, 0).flatten().reshape((1, 42))
+      board_flattened = np.flip(self.board, 0).flatten().reshape((1,42))
 
       # Use the model to predict the probabilities for each column
       predictions = model.predict(board_flattened)[0]
@@ -259,7 +259,7 @@ class ConnectFour:
                 col = self.ai_make_move()  # AI makes a move
 
             row = self.get_next_open_row(self.board, col)
-            self.col_moves[col] -= 1
+            # self.col_moves[col] -= 1
             self.drop_piece(self.board, row, col, self.turn + 1)
             if self.winning_move(self.board, self.turn + 1):
                 self.print_board(self.board)
