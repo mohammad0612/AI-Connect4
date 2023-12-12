@@ -1,6 +1,9 @@
+
+from tensorflow.keras.models import load_model
 import tkinter as tk
 from main import ConnectFour
 from tkinter import messagebox
+import numpy as np
 
 class ConnectFourGUI:
     def __init__(self, game):
@@ -8,6 +11,28 @@ class ConnectFourGUI:
         self.window = tk.Tk()
         self.window.title("Connect Four")
         self.create_board()
+    
+    def ai_make_move(self):
+      # Load the model
+      model = load_model('connect4_new_model.h5')
+
+      # Flatten the board and reshape it to match the model's input shape
+      board_flattened = np.flip(self.game.board, 0).flatten().reshape((1,42))
+
+      # Use the model to predict the probabilities for each column
+      predictions = model.predict(board_flattened)[0]
+      print("Predictions:\n", predictions)
+      
+      # Sort the columns by predicted probability in descending order
+      sorted_columns = np.argsort(predictions)[::-1]
+
+      # Try each column in order until a valid one is found
+      for col in sorted_columns:
+          if self.game.is_valid_location(self.game.board, col):
+              return col
+
+      # If no valid column is found (which should never happen), return None
+      return None   
 
     def on_click(self, col):
         # Check if the column is valid for a move
@@ -24,7 +49,7 @@ class ConnectFourGUI:
                 return  # End the game or reset
 
             # AI's turn
-            ai_col, _ = self.game.minimax(self.game.board, 5, -float("inf"), float("inf"), True)
+            ai_col = self.ai_make_move()
             if self.game.is_valid_location(self.game.board, ai_col):
                 ai_row = self.game.get_next_open_row(self.game.board, ai_col)
                 self.game.drop_piece(self.game.board, ai_row, ai_col, self.game.AI_PIECE)

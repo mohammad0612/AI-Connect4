@@ -1,0 +1,64 @@
+import numpy as np
+import csv
+import sys
+from main import ConnectFour
+class Connect4DatasetGenerator(ConnectFour):
+    def __init__(self):
+        super().__init__()
+
+    def play_game(self, seen_states):
+        game_over = False
+        game_states = []
+        best_moves = []
+
+
+        while not game_over:
+            game_state_str = str(np.flip(self.board, 0))
+
+            if self.turn == self.AI:
+                best_move, _ = self.minimax(self.board, 5, -sys.maxsize, sys.maxsize, True)
+                row = self.get_next_open_row(self.board, best_move)
+                self.drop_piece(self.board, row, best_move, self.AI_PIECE)
+
+                if game_state_str not in seen_states:
+                    seen_states.add(game_state_str)
+                    game_states.append(np.flip(self.board, 0).flatten())
+                    best_moves.append(best_move)
+            else:
+                random_move = self.random_move()
+                row = self.get_next_open_row(self.board, random_move)
+                self.drop_piece(self.board, row, random_move, self.USER_PIECE)
+
+            if self.winning_move(self.board, self.turn + 1):
+                game_over = True
+            elif len(self.get_valid_locations(self.board)) == 0:
+                game_over = True
+            self.turn = self.USER if self.turn == self.AI else self.AI
+
+        return game_states, best_moves
+
+    def random_move(self):
+        valid_locations = [c for c in range(self.columns) if self.is_valid_location(self.board, c)]
+        return np.random.choice(valid_locations)
+
+game_states = []
+best_moves = []
+seen_states2 = set()
+for i in range(10000):  # Adjust as needed
+    print("Playing game", i)
+    game = Connect4DatasetGenerator()
+    states, moves = game.play_game(seen_states2)
+    print(f"Recorded {len(states)} states and {len(moves)} moves")
+    game_states.extend(states)
+    best_moves.extend(moves)
+
+print(f"Total states: {len(game_states)}, total moves: {len(best_moves)}")
+
+# Assume game_states and best_moves are your lists of game states and moves
+with open('connect4_data.csv', 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Game State', 'Best Move'])
+    for state, move in zip(game_states, best_moves):
+        writer.writerow([','.join(map(str, state)), move])
+
+print(f"Total states: {len(game_states)}, total moves: {len(best_moves)}")
