@@ -1,5 +1,7 @@
 # AI-Connect4
 Training deep neural networks utilizing minimax and alpha beta pruning to achieve mastery of logistical games
+Find our research paper here:
+https://docs.google.com/document/d/1KIUyKrI6nTXXtph131n4cM96WPDGvFAnnapd_yEdFR4/edit?usp=sharing
 
 # Sources:
 Heuristic Search Planning with Deep Neural Networks using Imitation, Attention and Curriculum Learning
